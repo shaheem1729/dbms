@@ -1,10 +1,6 @@
 #include "BlockBuffer.h"
-
 #include <cstdlib>
 #include <cstring>
-
-#include "BlockBuffer.h"
-#include <cstring> // for memcpy
 
 // Constructor: initialize blockNum
 BlockBuffer::BlockBuffer(int blockNum)
@@ -38,7 +34,7 @@ int BlockBuffer::getHeader(struct HeadInfo *head)
 // Load the record at slotNum into the argument pointer
 int RecBuffer::getRecord(union Attribute *rec, int slotNum)
 {
-    struct HeadInfo head;
+    HeadInfo head;
 
     // Get the header info
     this->getHeader(&head);
@@ -61,6 +57,34 @@ int RecBuffer::getRecord(union Attribute *rec, int slotNum)
 
     // Load the record into the rec structure
     memcpy(rec, slotPointer, recordSize);
+
+    return SUCCESS;
+}
+
+int RecBuffer::setRecord(union Attribute *record, int slotNum)
+{
+    // get the header using this.getHeader() function
+    HeadInfo head;
+    BlockBuffer::getHeader(&head);
+
+    int attrCount = head.numAttrs;
+    int slotCount = head.numSlots;
+
+    // read the block at this.blockNum into a buffer
+    unsigned char buffer[BLOCK_SIZE];
+    Disk::readBlock(buffer, this->blockNum);
+
+    /* record at slotNum will be at offset HEADER_SIZE + slotMapSize + (recordSize * slotNum)
+       - each record will have size attrCount * ATTR_SIZE
+       - slotMap will be of size slotCount
+    */
+    int recordSize = attrCount * ATTR_SIZE;
+    unsigned char *slotPointer = buffer + (32 + slotCount + (recordSize * slotNum)); // calculate buffer + offset
+
+    // load the record into the rec data structure
+    memcpy(slotPointer, record, recordSize);
+
+    Disk::writeBlock(buffer, this->blockNum);
 
     return SUCCESS;
 }
