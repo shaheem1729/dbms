@@ -55,6 +55,26 @@ OpenRelTable::OpenRelTable()
     /************ Setting up Attribute cache entries ************/
     // (we need to populate attribute cache with entries for the relation catalog
     //  and attribute catalog.)
+    // //this is for the students relation
+
+    // //here we are using the RecBuffer of relCatRecordRel block
+
+    //----------students relation to relcache-------------//
+
+    RecBuffer relCatBlockRel(RELCAT_BLOCK);
+    Attribute relCatRecordRel[RELCAT_NO_ATTRS];
+    relCatBlockRel.getRecord(relCatRecordRel, 2);
+    RelCacheEntry relCacheEntryRel;
+    RelCacheTable::recordToRelCatEntry(relCatRecordRel, &relCacheEntryRel.relCatEntry);
+
+    relCacheEntryRel.recId.block = RELCAT_BLOCK;
+    relCacheEntryRel.recId.slot = 2;
+    relCacheEntryRel.searchIndex = {-1, -1};
+
+    RelCacheTable::relCache[2] = new RelCacheEntry;
+    *(RelCacheTable::relCache[2]) = relCacheEntryRel;
+
+    //----------students relation to relcache done---------//
 
     // setting up the variables
     RecBuffer attrCatBlock(ATTRCAT_BLOCK);
@@ -82,6 +102,41 @@ OpenRelTable::OpenRelTable()
 
         AttrCacheTable::attrCache[relId] = head;
     }
+
+    //----------students attributes to attrcache-----------//
+
+    AttrCacheEntry *attrCacheEntryRel = NULL;
+    AttrCacheEntry *attrCacheEntryRelTemp = NULL;
+    Attribute attrCatRecordRel[RELCAT_NO_ATTRS];
+    RecBuffer attrCatBlockRel(ATTRCAT_BLOCK);
+
+    // Allocate the head node
+    attrCacheEntryRel = (AttrCacheEntry *)malloc(sizeof(AttrCacheEntry));
+    attrCacheEntryRelTemp = attrCacheEntryRel;
+
+    for (int i = 12; i < 16; i++)
+    {
+        attrCatBlockRel.getRecord(attrCatRecordRel, i);
+        AttrCacheTable::recordToAttrCatEntry(attrCatRecordRel, &(attrCacheEntryRelTemp->attrCatEntry));
+
+        attrCacheEntryRelTemp->recId.block = ATTRCAT_BLOCK;
+        attrCacheEntryRelTemp->recId.slot = i;
+        attrCacheEntryRelTemp->searchIndex = {-1, -1};
+
+        if (i < 15)
+        {
+            attrCacheEntryRelTemp->next = (AttrCacheEntry *)malloc(sizeof(AttrCacheEntry));
+            attrCacheEntryRelTemp = attrCacheEntryRelTemp->next;
+        }
+        else
+        {
+            attrCacheEntryRelTemp->next = NULL;
+        }
+    }
+
+    AttrCacheTable::attrCache[2] = attrCacheEntryRel;
+
+    //-----students attribute to attrcache done------------//
 }
 
 OpenRelTable::~OpenRelTable()
@@ -105,8 +160,8 @@ int OpenRelTable::getRelId(char relName[ATTR_SIZE])
     if (strcmp(relName, ATTRCAT_RELNAME) == 0)
         return ATTRCAT_RELID;
 
-    // if (strcmp(relName, "Students") == 0)
-    //     return 2;
+    if (strcmp(relName, "Students") == 0)
+        return 2;
 
     return E_RELNOTOPEN;
 }
